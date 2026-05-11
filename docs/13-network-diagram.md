@@ -8,7 +8,7 @@
 
 Fichier importable dans [app.diagrams.net](https://app.diagrams.net) :
 
-**[→ docs/assets/network-diagram.drawio](assets/network-diagram.drawio)**
+**[→ diagrams/assets/network-diagram.drawio](../diagrams/assets/network-diagram.drawio)**
 
 > **Ouvrir** : `app.diagrams.net` → **File → Import from → Device** → sélectionner le fichier `.drawio`
 

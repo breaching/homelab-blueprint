@@ -38,5 +38,5 @@ curl -sk -u "wazuh-wui:$PWD" -X POST "https://localhost:55000/security/user/auth
 
 ## Related issues
 
-- `/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml` ships with placeholder password `q3V32d.dVv1MJciJkkmXJw2NeVdwSs69` for `wazuh-wui` user. Must be replaced with actual password from `/var/ossec/wazuh-install-files/wazuh-passwords.txt` (cf [`scripts/fix-wazuh-dashboard-api-v2.py`](scripts/fix-wazuh-dashboard-api-v2.py)).
+- `/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml` ships with placeholder password `q3V32d.dVv1MJciJkkmXJw2NeVdwSs69` for `wazuh-wui` user. Must be replaced with actual password from `/var/ossec/wazuh-install-files/wazuh-passwords.txt` (remplacer programmatiquement avec un script qui lit le password et patche le YAML).
 - Vulnerability scanner DB schema mismatch post-upgrade : `Couldn't find column family: 'vendor_map'` → `rm -rf /var/ossec/queue/vd && mkdir -p /var/ossec/queue/vd` then restart manager (regenerates fresh DB).

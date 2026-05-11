@@ -473,7 +473,7 @@ Toutes les modifications notables du homelab. Format librement inspiré de [Keep
   - `loki-ingest-errors` (warning) - Loki rejette >50 events/5min sustained 5m
   - `host-log-gap` (warning) - un host arrête de shipper journald pour 10+ min
   - `ucg-firewall-flood` (info) - UCG syslog rate >50/s sustained 5m
-- **Vector docker_logs source sur VM 300 Coolify** - Vector watch tous les containers Coolify (Coolify app, sentinel, portfolio, krill-watch, postgres, redis, realtime, proxy, etc.). Labels Loki : `host=coolify, service=<container_name>, source_type=docker`. User vector ajouté au groupe docker pour accès `/var/run/docker.sock`.
+- **Vector docker_logs source sur VM 300 Coolify** - Vector watch tous les containers Coolify (Coolify app, sentinel, portfolio, webapp, postgres, redis, realtime, proxy, etc.). Labels Loki : `host=coolify, service=<container_name>, source_type=docker`. User vector ajouté au groupe docker pour accès `/var/run/docker.sock`.
 
 ### Changed
 - **PVE notifications Telegram** : token PVE était DÉJÀ correct (re-encodé identique), pas besoin de update. Le silence apparent vient du fait que `pvesh create /cluster/notifications/targets/telegram/test` ne produit pas de stdout - il envoie sans verbose. Notifications PVE sont donc fonctionnelles, le user les recevait silencieusement.
@@ -657,7 +657,7 @@ Toutes les modifications notables du homelab. Format librement inspiré de [Keep
 ### Added
 - **VPS Hetzner `hetzner-shared-1`** : Cloud CX 23 (2 vCPU / 4 GB / 40 GB), Falkenstein FSN1, Ubuntu 24.04 LTS, IP `203.0.113.10`, ~4,79 €/mois. Provisionné via Coolify (API Hetzner) le 2026-05-05. Destiné à mutualiser portfolio example.com + premiers sites clients via Cloudflare Tunnel.
 - **Cloudflare Tunnel `homelab-coolify`** sur VM 300 (cloudflared docker, `--network host`, token en env-file `/etc/cloudflared/.env` mode 600). Expose `coolify.home.example.com/webhooks/*` + `/app/*` + `/apps/*` publiquement (path-filtered, le reste de Coolify reste invisible internet).
-- **GitHub App Coolify** (id 3612700, install id 129792007) sur `youruser/portfolio`. Webhook délivré via tunnel CF. Auto-deploy sur push `main`.
+- **GitHub App Coolify** (id `<GITHUB_APP_ID>`, install id `<INSTALL_ID>`) sur `youruser/portfolio`. Webhook délivré via tunnel CF. Auto-deploy sur push `main`.
 - **App Coolify `my-portfolio`** sur server `localhost` (VM 300), FQDN `http://test.home.example.com`, base directory `/frontend`, build pack Dockerfile (Next.js 16 standalone, Node 22 alpine). Build OK : 32 routes pré-rendues, image ~26 MB context.
 - **Pattern `coolify-apps`** : nouveau fichier `configs/traefik/coolify-apps.yml` qui forward `*.home.example.com` LAN-only des apps Coolify via HTTPS interne (`serversTransport: insecure`, cert self-signed côté coolify-proxy). TLS terminé à LXC 103 avec wildcard cert.
 - **Repo `youruser/portfolio`** : commit `8f16b2f` - `Dockerfile` multi-stage Next.js standalone + `output: "standalone"` dans `next.config.ts` + retrait de `@vercel/analytics` et `@vercel/speed-insights` (no-op hors Vercel) + retrait de `va.vercel-scripts.com` du CSP.

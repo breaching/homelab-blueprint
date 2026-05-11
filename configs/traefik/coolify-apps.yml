@@ -32,7 +32,7 @@ http:
               - "*.home.example.com"
 
     # Krill-watch - créé d'origine en http://, 1 seul router http côté coolify-proxy
-    krill-watch:
+    webapp:
       rule: "Host(`krill.home.example.com`)"
       entryPoints:
         - websecure

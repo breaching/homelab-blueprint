@@ -162,7 +162,7 @@ http:
 ## État actuel (2026-05-05)
 
 - ✅ VM 300 + Coolify 4.0.0 + cloudflared tunnel
-- ✅ GitHub App enregistrée (id `3612700`, install id `129792007`) sur `youruser/portfolio`
+- ✅ GitHub App enregistrée (id `<GITHUB_APP_ID>`, install id `<INSTALL_ID>`) sur `youruser/portfolio`
 - ✅ Hetzner CX23 `hetzner-shared-1` provisionné (dispo pour les futurs sites clients ou bascule prod portfolio)
 - ✅ App test `my-portfolio` déployée sur server `localhost`, joignable LAN-only via `https://test.home.example.com`
 - ⏳ Bascule prod `example.com` vers Hetzner après validation test LAN
