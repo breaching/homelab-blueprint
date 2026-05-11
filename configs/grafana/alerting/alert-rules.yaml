@@ -1,0 +1,132 @@
+# Alert rules provisioned dans LXC 108 grafana
+# Push : pct push 108 ./alert-rules.yaml /etc/grafana/provisioning/alerting/alert-rules.yaml + chgrp grafana + chmod 640
+#
+# Toutes les alerts routent vers le contact point default (telegram-homelab) via la
+# notification policy default (configuré dans telegram.yaml côté PVE).
+
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: security
+    folder: Alerts
+    interval: 1m
+    rules:
+      - uid: cowrie-ssh-attempt
+        title: Cowrie SSH attempt detected
+        # Paused 2026-05-06: Wazuh now alerts on cowrie.session.connect (rule 100100, L12)
+        # via /var/ossec/integrations/custom-telegram avec un grain plus fin (rule_id,
+        # src_ip, agent). Évite les duplicates. Réactiver si Wazuh down.
+        isPaused: true
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: loki
+            model:
+              expr: 'sum(count_over_time({service="cowrie"} |~ "cowrie.session.connect"[5m]))'
+              queryType: instant
+              refId: A
+          - refId: B
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {params: [0], type: gt}
+              refId: B
+        noDataState: OK
+        execErrState: Error
+        for: 0m
+        annotations:
+          summary: "Tentative SSH sur le honeypot - possible attaque"
+          description: "{{ $values.A.Value }} session(s) Cowrie détectée(s) ces 5 dernières minutes. Voir Grafana Explore: {service=\"cowrie\"}"
+        labels:
+          severity: critical
+
+      - uid: loki-ingest-errors
+        title: Loki ingest errors elevated
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: loki
+            model:
+              expr: 'sum(count_over_time({host="nsm-logs", service="loki.service"} |~ "(?i)reject|too new|too old"[5m]))'
+              queryType: instant
+              refId: A
+          - refId: B
+            relativeTimeRange: {from: 600, to: 0}
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {params: [50], type: gt}
+              refId: B
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: "Loki rejette beaucoup d'events (>50/5min)"
+          description: "Loki sur nsm-logs (192.168.1.242) rejette {{ $values.A.Value }} events en 5 min. Probable timestamp drift, label invalide, ou disk plein."
+        labels:
+          severity: warning
+
+      - uid: host-log-gap
+        title: Host stopped shipping logs
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: {from: 1800, to: 0}
+            datasourceUid: loki
+            model:
+              expr: 'count by (host) (count_over_time({source="journald"}[2m]))'
+              queryType: instant
+              refId: A
+          - refId: B
+            relativeTimeRange: {from: 1800, to: 0}
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {params: [0], type: lt}
+              refId: B
+        noDataState: Alerting
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: "Un host a cessé de shipper journald"
+          description: "Host {{ $labels.host }} n'a pas envoyé de log depuis 10+ min. Vector down ou LXC/VM crashé. SSH check: pct exec <id> -- systemctl is-active vector"
+        labels:
+          severity: warning
+
+      - uid: ucg-firewall-flood
+        title: UCG firewall events flood
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: loki
+            model:
+              expr: 'sum(rate({source_type="ucg-syslog"}[1m]))'
+              queryType: instant
+              refId: A
+          - refId: B
+            relativeTimeRange: {from: 300, to: 0}
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: {params: [50], type: gt}
+              refId: B
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: "UCG firewall events anormalement élevé (>50/s pendant 5min)"
+          description: "Probable scan en cours ou attaque. Voir Grafana: {source_type=\"ucg-syslog\"}"
+        labels:
+          severity: info

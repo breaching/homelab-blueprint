@@ -1,0 +1,58 @@
+<!--
+  Wazuh custom rules pour AdGuard DNS queries (LXC 100).
+  Append à /var/ossec/etc/rules/local_rules.xml du MANAGER LXC 122.
+  Reload via `systemctl restart wazuh-manager`.
+
+  Pré-requis :
+  - AdGuard logge en JSON dans /opt/AdGuardHome/data/querylog.json
+  - Wazuh agent LXC 100 a localfile JSON dessus (cf agent-localfile-adguard.xml)
+  - ACL u:wazuh:r sur le file (perms 600 root par défaut)
+
+  Stratégie : detection ciblée sur patterns à signal/noise élevé pour DNS :
+  - Suspicious TLDs gratuits (.tk/.ml/.ga/.cf/.gq) abusés massivement par
+    malware/phishing/C2 - légit traffic ~0% les utilise
+  - Aggregate burst pour chopper les volumes anormaux (DNS exfil potentiel)
+-->
+<group name="adguard,dns,custom,">
+
+  <!-- Suspicious TLDs : free TLDs heavily abused by malware/phishing -->
+  <rule id="100500" level="9">
+    <decoded_as>json</decoded_as>
+    <field name="QH" type="pcre2">\.(tk|ml|ga|cf|gq|xyz|top|loan|click|download|win)$</field>
+    <description>AdGuard: query to suspicious TLD: $(QH) from $(IP)</description>
+    <group>recon,dns,</group>
+    <mitre>
+      <id>T1071.004</id>
+    </mitre>
+  </rule>
+
+  <!-- Burst : 5+ suspicious TLD queries from same client in 60s = highly anormal -->
+  <rule id="100501" level="11" frequency="5" timeframe="60">
+    <if_matched_sid>100500</if_matched_sid>
+    <same_field>IP</same_field>
+    <description>AdGuard: 5+ suspicious TLD queries in 60s from $(IP) = potential C2/exfil</description>
+    <group>attack,dns,exfiltration,</group>
+    <mitre>
+      <id>T1071.004</id>
+      <id>T1041</id>
+    </mitre>
+  </rule>
+
+  <!-- Very long subdomain (DNS tunneling pattern).
+       Excluded : cloud provider FQDNs (AWS ELB, Cloudflare, Akamai, Azure,
+       GCP, Fastly) qui légitimement utilisent des hashes longs dans leurs
+       hostnames. Sinon faux positifs systématiques sur n'importe quel app
+       qui consume des services cloud. -->
+  <rule id="100502" level="10">
+    <decoded_as>json</decoded_as>
+    <field name="QH" type="pcre2">^[a-zA-Z0-9+/=_-]{40,}\.</field>
+    <field name="QH" type="pcre2" negate="yes">\.(amazonaws\.com|cloudfront\.net|azurewebsites\.net|googleusercontent\.com|googleapis\.com|cloudflare\.com|fastly\.net|akamai(?:technologies|edge|hd)?\.net|akamaized\.net|elb\.[a-z0-9-]+\.amazonaws\.com|s3\.[a-z0-9-]+\.amazonaws\.com|appspot\.com|herokuapp\.com|netlify\.app|vercel\.app|cdn\..+)$</field>
+    <description>AdGuard: extremely long subdomain query: $(QH) from $(IP) = possible DNS tunneling</description>
+    <group>attack,dns,exfiltration,</group>
+    <mitre>
+      <id>T1572</id>
+      <id>T1041</id>
+    </mitre>
+  </rule>
+
+</group>

@@ -1,0 +1,13 @@
+<!--
+  Wazuh agent localfile block to monitor Cowrie SSH honeypot logs.
+  À insérer dans /var/ossec/etc/ossec.conf de l'AGENT LXC 120 (honeypot)
+  juste avant </ossec_config>. Reload via `systemctl restart wazuh-agent`.
+
+  log_format=json fait que Wazuh parse auto les fields cowrie (eventid,
+  src_ip, username, password, input, etc.) - accessibles dans les rules
+  via <field name="eventid">…</field>.
+-->
+  <localfile>
+    <log_format>json</log_format>
+    <location>/home/cowrie/cowrie/var/log/cowrie/cowrie.json</location>
+  </localfile>

@@ -1,0 +1,99 @@
+http:
+  routers:
+    jellyfin:
+      rule: "Host(`jellyfin.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: jellyfin
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    radarr:
+      rule: "Host(`radarr.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: radarr
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    sonarr:
+      rule: "Host(`sonarr.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: sonarr
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    lidarr:
+      rule: "Host(`lidarr.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: lidarr
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    bazarr:
+      rule: "Host(`bazarr.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: bazarr
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    jellyseerr:
+      rule: "Host(`jellyseerr.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: jellyseerr
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+  services:
+    jellyfin:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.88:8096"
+    radarr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.88:7878"
+    sonarr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.88:9000"
+    lidarr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.88:8686"
+    bazarr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.88:6767"
+    jellyseerr:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.88:5055"

@@ -1,0 +1,22 @@
+# Datasource Loki provisioned dans LXC 108 grafana
+# Push : pct push 108 ./loki.yaml /etc/grafana/provisioning/datasources/loki.yaml + chgrp grafana + chmod 640
+#
+# Note : `deleteDatasources` est nécessaire si une Loki datasource existe déjà
+# avec un UID auto-généré (créée précédemment sans uid: explicite). Sans ça,
+# Grafana refuse de changer l'UID et échoue avec "data source not found" →
+# crashloop systemd. À retirer après 1er déploiement réussi.
+apiVersion: 1
+deleteDatasources:
+  - name: Loki
+    orgId: 1
+datasources:
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://192.168.1.242:3100
+    isDefault: false
+    editable: true
+    jsonData:
+      timeout: 60
+      maxLines: 5000

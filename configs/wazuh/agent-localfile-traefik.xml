@@ -1,0 +1,13 @@
+<!--
+  Wazuh agent localfile pour Traefik access log JSON.
+  À insérer dans /var/ossec/etc/ossec.conf de l'AGENT LXC 103 (traefik)
+  juste avant </ossec_config>. Reload via `systemctl restart wazuh-agent`.
+
+  log_format=json fait que les fields Traefik (RequestPath, DownstreamStatus,
+  ClientHost, RequestMethod, OriginContentSize, request_User-Agent) sont
+  décodés auto et accessibles dans les rules via <field name="X">.
+-->
+  <localfile>
+    <log_format>json</log_format>
+    <location>/var/log/traefik/traefik-access.log</location>
+  </localfile>

@@ -1,0 +1,27 @@
+# Datasource Wazuh OpenSearch - provisioned dans LXC 108 grafana
+# Push : pct push 108 ./wazuh-opensearch.yaml /etc/grafana/provisioning/datasources/wazuh-opensearch.yaml
+#        + chgrp grafana + chmod 640 + systemctl restart grafana-server
+#
+# Pré-requis :
+# 1. Plugin grafana-opensearch-datasource installé (grafana-cli plugins install ...)
+# 2. Env var WAZUH_INDEXER_ADMIN_PWD chargée par systemd via EnvironmentFile=/etc/grafana/secrets/wazuh.env
+# 3. Wazuh indexer (LXC 122) self-signed cert → tlsSkipVerify=true (acceptable LAN-only)
+apiVersion: 1
+datasources:
+  - name: Wazuh
+    uid: wazuh
+    type: grafana-opensearch-datasource
+    access: proxy
+    url: https://192.168.1.221:9200
+    basicAuth: true
+    basicAuthUser: admin
+    secureJsonData:
+      basicAuthPassword: "${WAZUH_INDEXER_ADMIN_PWD}"
+    jsonData:
+      database: "wazuh-alerts-*"
+      timeField: "@timestamp"
+      version: "OpenSearch 2.x"
+      flavor: opensearch
+      tlsSkipVerify: true
+      maxConcurrentShardRequests: 5
+    editable: true

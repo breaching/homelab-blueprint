@@ -1,0 +1,119 @@
+http:
+  routers:
+    pve:
+      rule: "Host(`pve.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: pve
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    traefik-dashboard:
+      rule: "Host(`traefik.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: api@internal
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    authentik:
+      rule: "Host(`authentik.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: authentik
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    uptime:
+      rule: "Host(`uptime.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: uptime
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    coolify:
+      rule: "Host(`coolify.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: coolify
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    coolify-ws:
+      rule: "Host(`coolify.home.example.com`) && (PathPrefix(`/app/`) || PathPrefix(`/apps/`))"
+      entryPoints:
+        - websecure
+      service: coolify-ws
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    wazuh:
+      rule: "Host(`wazuh.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: wazuh
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+  services:
+    pve:
+      loadBalancer:
+        serversTransport: insecure
+        servers:
+          - url: "https://192.168.1.90:8006"
+
+    authentik:
+      loadBalancer:
+        serversTransport: insecure
+        servers:
+          - url: "https://192.168.1.181:443"
+
+    uptime:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.181:9000"
+
+    coolify:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.252:8000"
+
+    coolify-ws:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.252:6001"
+
+    wazuh:
+      loadBalancer:
+        serversTransport: insecure
+        servers:
+          - url: "https://192.168.1.221:443"

@@ -1,0 +1,39 @@
+{
+  "policy": {
+    "description": "Delete wazuh-alerts and wazuh-archives indices after 30 days. Auto-applied via ism_template to matching index_patterns.",
+    "default_state": "hot",
+    "schema_version": 1,
+    "states": [
+      {
+        "name": "hot",
+        "actions": [],
+        "transitions": [
+          {
+            "state_name": "delete",
+            "conditions": {
+              "min_index_age": "30d"
+            }
+          }
+        ]
+      },
+      {
+        "name": "delete",
+        "actions": [
+          {
+            "delete": {}
+          }
+        ],
+        "transitions": []
+      }
+    ],
+    "ism_template": [
+      {
+        "index_patterns": [
+          "wazuh-alerts-*",
+          "wazuh-archives-*"
+        ],
+        "priority": 100
+      }
+    ]
+  }
+}

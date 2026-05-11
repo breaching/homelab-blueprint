@@ -1,0 +1,99 @@
+http:
+  routers:
+    immich:
+      rule: "Host(`immich.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: immich
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    grafana:
+      rule: "Host(`grafana.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: grafana
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    influxdb:
+      rule: "Host(`influxdb.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: influxdb
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    adguard:
+      rule: "Host(`dns.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: adguard
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    file:
+      rule: "Host(`file.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: file
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    excalidraw:
+      rule: "Host(`draw.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: excalidraw
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+  services:
+    immich:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.134:2283"
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.85:3000"
+    influxdb:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.94:8086"
+    adguard:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.246:80"
+    file:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.195:80"
+    excalidraw:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.1.78:3000"

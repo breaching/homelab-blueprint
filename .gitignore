@@ -1,0 +1,33 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Secrets that should never live here
+.env
+.env.local
+*.secret
+*.key
+*.pem
+*.crt
+
+# Local agent / tooling state
+.claude/
+.tmp/
+
+# Backup artefacts
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+homelab-export/
+
+# Generated images from drawio (keep .drawio sources, generated PNGs can be re-exported)
+diagrams/*.png
+docs/assets/*.png

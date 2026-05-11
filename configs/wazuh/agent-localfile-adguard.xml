@@ -1,0 +1,15 @@
+<!--
+  Wazuh agent localfile pour AdGuard query log JSON.
+  À insérer dans /var/ossec/etc/ossec.conf de l'AGENT LXC 100 (adguard).
+  Pré-requis : ACL sur /opt/AdGuardHome/data/querylog.json :
+    setfacl -m u:wazuh:r /opt/AdGuardHome/data/querylog.json
+    setfacl -m u:wazuh:rx /opt/AdGuardHome/data
+  (le file est mode 600 root par défaut, l'ACL contourne)
+
+  log_format=json fait que les fields AdGuard (QH=query host, QT=query type,
+  IP=client, Result.IsFiltered) sont décodés auto.
+-->
+  <localfile>
+    <log_format>json</log_format>
+    <location>/opt/AdGuardHome/data/querylog.json</location>
+  </localfile>

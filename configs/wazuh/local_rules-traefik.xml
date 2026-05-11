@@ -1,0 +1,78 @@
+<!--
+  Wazuh custom rules pour Traefik access log (LXC 103).
+  À append dans /var/ossec/etc/rules/local_rules.xml du MANAGER LXC 122.
+  Reload via `systemctl restart wazuh-manager`.
+
+  Pré-requis :
+  - Traefik logge JSON dans /var/log/traefik/traefik-access.log
+  - Filter statusCodes inclut "400-599" (sinon les 4xx invisibles)
+  - Wazuh agent LXC 103 a localfile JSON sur le file (cf agent-localfile-traefik.xml)
+
+  Stratégie : silent par défaut sur les events normaux (5/6 par event), seules
+  les patterns d'attaque déclenchent L≥10 → Telegram (path scan, brute force).
+-->
+<group name="traefik,web,custom,">
+
+  <!-- Path scanning (regardless of status: catches the attempt itself) -->
+  <rule id="100200" level="11">
+    <decoded_as>json</decoded_as>
+    <field name="RequestPath" type="pcre2">(?i)(/\.env|/\.git|/admin($|/)|/wp-login|/wp-admin|/phpmyadmin|/actuator|/console($|/)|/_ignition|/server-status|/manager/html|/cgi-bin/|/\.well-known/security|/owa/|/autodiscover\.xml|/HNAP1|/boaform|/hudson|/jenkins|/struts|/webdav|/\.svn|/\.htaccess|/druid)</field>
+    <description>Traefik: suspicious path scan $(RequestPath) from $(ClientHost) (status $(DownstreamStatus))</description>
+    <group>attack,web,scan,recon,</group>
+    <mitre>
+      <id>T1595.003</id>
+    </mitre>
+  </rule>
+
+  <!-- 5xx server errors (informational, not Tg) -->
+  <rule id="100201" level="5">
+    <decoded_as>json</decoded_as>
+    <field name="DownstreamStatus" type="pcre2">^5\d\d$</field>
+    <description>Traefik: 5xx error $(DownstreamStatus) on $(RequestPath)</description>
+    <group>web,error,</group>
+  </rule>
+
+  <!-- 401/403 unauthorized (silent base, brute-force aggregate triggers Tg).
+       Excluded RequestAddr : wazuh.home.example.com (own dashboard auth flow génère
+       beaucoup de 401 légitimes pendant la session establishment) + grafana /
+       authentik (mêmes patterns IdP/dashboards qui ont leur propre brute force
+       protection). Si on les laissait, faux positifs systématiques au login. -->
+  <rule id="100202" level="6">
+    <decoded_as>json</decoded_as>
+    <field name="DownstreamStatus" type="pcre2">^40[13]$</field>
+    <field name="RequestAddr" type="pcre2" negate="yes">^(wazuh|authentik|grafana|kuma|uptime)\.homelab\.com$</field>
+    <description>Traefik: $(DownstreamStatus) auth failure on $(RequestPath) from $(ClientHost)</description>
+    <group>web,authentication_failed,</group>
+  </rule>
+
+  <!-- Brute force aggregate: 5+ 401/403 from same IP in 60s -->
+  <rule id="100203" level="11" frequency="5" timeframe="60">
+    <if_matched_sid>100202</if_matched_sid>
+    <same_field>ClientHost</same_field>
+    <description>Traefik: brute force web auth (5+ failures in 60s) from $(ClientHost)</description>
+    <group>attack,web,authentication_failures,</group>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+  </rule>
+
+  <!-- Base rule for 404 (silent, only for aggregation) -->
+  <rule id="100204" level="3">
+    <decoded_as>json</decoded_as>
+    <field name="DownstreamStatus" type="pcre2">^404$</field>
+    <description>Traefik: 404 not found on $(RequestPath)</description>
+    <group>web,</group>
+  </rule>
+
+  <!-- Aggregate: 20+ 404 from same IP in 60s = path probing burst -->
+  <rule id="100205" level="10" frequency="20" timeframe="60">
+    <if_matched_sid>100204</if_matched_sid>
+    <same_field>ClientHost</same_field>
+    <description>Traefik: 404 burst (20+ in 60s) from $(ClientHost) = path probing</description>
+    <group>attack,web,scan,recon,</group>
+    <mitre>
+      <id>T1595.001</id>
+    </mitre>
+  </rule>
+
+</group>

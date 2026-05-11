@@ -1,0 +1,26 @@
+<!--
+  Wazuh custom rules pour PVE host (LXC 122 manager).
+  Append à /var/ossec/etc/rules/local_rules.xml.
+  Reload via `systemctl restart wazuh-manager`.
+
+  Why : Wazuh ships built-in 87201 (single auth fail, L6) + 87202 (brute force,
+  L10 freq 8/120s same_source_ip). En pratique, le `same_source_ip` ne match pas
+  toujours sur PVE (rhost en format `::ffff:X.X.X.X` IPv4-mapped IPv6).
+  On ajoute des aggregates plus sensibles SANS la contrainte same_source_ip.
+-->
+<group name="syslog,proxmox-ve,custom,">
+
+  <!-- Brute force PVE web UI : 5+ auth fails in 60s
+       (Wazuh built-in 87202 demande same_source_ip qui ne match pas
+       toujours sur format `::ffff:X.X.X.X` IPv4-mapped IPv6. Cette rule
+       relâche la contrainte pour catch les brute force depuis n'importe où.) -->
+  <rule id="100400" level="11" frequency="5" timeframe="60">
+    <if_matched_sid>87201</if_matched_sid>
+    <description>PVE: 5+ auth failures in 60s = brute force web UI</description>
+    <group>attack,proxmox-ve,authentication_failures,</group>
+    <mitre>
+      <id>T1110.003</id>
+    </mitre>
+  </rule>
+
+</group>

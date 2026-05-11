@@ -1,0 +1,79 @@
+<!--
+  Wazuh custom rules pour les events Cowrie SSH honeypot.
+  À insérer dans /var/ossec/etc/rules/local_rules.xml du MANAGER LXC 122.
+  Reload via `systemctl restart wazuh-manager`.
+
+  Pré-requis : agent LXC 120 doit forward /home/cowrie/cowrie/var/log/cowrie/cowrie.json
+  (cf agent-localfile-cowrie.xml). Le décodeur json built-in parse les fields auto.
+
+  Levels choisis pour aligner avec le filtre Telegram (level >= 10) :
+  - session.connect = L12 (TOUTE connexion = critique → 1 Telegram par session)
+  - login.success = L8 (silent - déjà couvert par session.connect en pratique)
+  - login.failed = L8 (silent - bruit pendant les brute force)
+  - command.input = L8 (silent - sinon spam Telegram en cas de session active longue,
+    consultable sur wazuh.home.example.com)
+  - direct-tcpip = L13 (PIVOT = top severity, alert distinct de session.connect)
+  - file_download = L9 (silent par défaut, threshold 10)
+
+  Stratégie "1 Telegram par session" : seul session.connect (et pivot/file_download
+  si exception) déclenche notif. Détails commandes/auth dans dashboard Wazuh.
+-->
+<group name="cowrie,honeypot,custom,">
+
+  <rule id="100100" level="12">
+    <decoded_as>json</decoded_as>
+    <field name="eventid">cowrie.session.connect</field>
+    <description>Cowrie honeypot: SSH session connect from $(src_ip):$(src_port)</description>
+    <group>attack,intrusion_attempt,recon,</group>
+    <mitre>
+      <id>T1110</id>
+      <id>T1078</id>
+    </mitre>
+  </rule>
+
+  <rule id="100101" level="8">
+    <decoded_as>json</decoded_as>
+    <field name="eventid">cowrie.login.failed</field>
+    <description>Cowrie honeypot: failed SSH login as $(username) from $(src_ip)</description>
+    <group>authentication_failed,</group>
+  </rule>
+
+  <rule id="100102" level="8">
+    <decoded_as>json</decoded_as>
+    <field name="eventid">cowrie.login.success</field>
+    <description>Cowrie honeypot: SSH login SUCCESS for $(username)/$(password) from $(src_ip)</description>
+    <group>authentication_success,attack,</group>
+  </rule>
+
+  <rule id="100103" level="8">
+    <decoded_as>json</decoded_as>
+    <field name="eventid">cowrie.command.input</field>
+    <description>Cowrie honeypot: command executed: $(input) (from $(src_ip))</description>
+    <group>attack,exec,</group>
+    <mitre>
+      <id>T1059</id>
+    </mitre>
+  </rule>
+
+  <rule id="100104" level="13">
+    <decoded_as>json</decoded_as>
+    <field name="eventid">cowrie.direct-tcpip.request</field>
+    <description>Cowrie honeypot: SSH tunnel pivot attempt to $(dst_ip):$(dst_port)</description>
+    <group>attack,pivoting,</group>
+    <mitre>
+      <id>T1572</id>
+      <id>T1090</id>
+    </mitre>
+  </rule>
+
+  <rule id="100105" level="9">
+    <decoded_as>json</decoded_as>
+    <field name="eventid">cowrie.session.file_download</field>
+    <description>Cowrie honeypot: malware download attempted from $(url)</description>
+    <group>malware,attack,</group>
+    <mitre>
+      <id>T1105</id>
+    </mitre>
+  </rule>
+
+</group>

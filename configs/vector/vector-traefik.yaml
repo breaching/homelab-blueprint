@@ -1,0 +1,61 @@
+# Vector client config - LXC 103 traefik
+# Ship journald + Traefik access.log JSON to Loki nsm-logs (LXC 121).
+#
+# Push : pct push 103 ./vector-traefik.yaml /etc/vector/vector.yaml
+#        pct exec 103 -- systemctl restart vector
+data_dir: /var/lib/vector
+
+sources:
+  journald:
+    type: journald
+    current_boot_only: true
+
+  traefik_access:
+    type: file
+    include:
+      - /var/log/traefik/traefik-access.log
+    read_from: end
+
+transforms:
+  add_meta:
+    type: remap
+    inputs:
+      - journald
+    source: |
+      .host = .host || "unknown"
+      .service = ._SYSTEMD_UNIT || "unknown"
+      .source_type = "journald"
+
+  parse_traefik:
+    type: remap
+    inputs:
+      - traefik_access
+    source: |
+      parsed, err = parse_json(.message)
+      if err == null {
+        .request_path = parsed.RequestPath
+        .request_host = parsed.RequestHost
+        .status = parsed.DownstreamStatus
+        .client_ip = parsed.ClientHost
+        .method = parsed.RequestMethod
+        .duration_ns = parsed.Duration
+        .user_agent = parsed."request_User-Agent"
+        .router_name = parsed.RouterName
+      }
+      .host = "traefik"
+      .service = "traefik"
+      .source_type = "traefik_access"
+
+sinks:
+  loki:
+    type: loki
+    inputs:
+      - add_meta
+      - parse_traefik
+    endpoint: http://192.168.1.242:3100
+    encoding:
+      codec: json
+    labels:
+      host: "{{ host }}"
+      service: "{{ service }}"
+      source_type: "{{ source_type }}"

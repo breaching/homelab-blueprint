@@ -1,0 +1,74 @@
+# Routes Traefik LXC 103 → coolify-proxy sur VM 300
+# Pour les apps déployées par Coolify sur le serveur "localhost" en LAN-only.
+#
+# Pattern :
+#   Browser → AdGuard (*.home.example.com → .165) → Traefik LXC 103 (TLS termination
+#   via wildcard cert *.home.example.com) → coolify-proxy → container app.
+#
+# Coolify v4 génère des labels Traefik différents selon l'historique du FQDN :
+#   - App créée d'origine en https:// → 2 routers (http-0 avec redirect vers
+#     https-0 + cert letsencrypt). Forward LXC 103 → HTTPS:443 + insecureSkipVerify.
+#   - App créée d'origine en http:// → 1 router http-0 seul (pas de redirect).
+#     Forward LXC 103 → HTTP:80 (passHostHeader).
+#
+# 2 services dans ce fichier : `coolify-apps-https` pour le 1er cas,
+# `coolify-apps-http` pour le 2e. À toi d'attribuer le bon service au router
+# en fonction de comment l'app a été créée. Pas besoin du second service si
+# tu peux toujours créer en http:// dès l'origine.
+
+http:
+  routers:
+    # Portfolio - créé initialement en https://, conserve les 2 routers Coolify
+    portfolio-test:
+      rule: "Host(`test.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: coolify-apps-https
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+    # Krill-watch - créé d'origine en http://, 1 seul router http côté coolify-proxy
+    krill-watch:
+      rule: "Host(`krill.home.example.com`)"
+      entryPoints:
+        - websecure
+      service: coolify-apps-http
+      tls:
+        certResolver: cloudflare
+        domains:
+          - main: home.example.com
+            sans:
+              - "*.home.example.com"
+
+  services:
+    # Forward HTTPS:443 vers coolify-proxy (cert self-signed côté coolify-proxy,
+    # on saute la vérif). Coolify-proxy a un router https-0 → container.
+    coolify-apps-https:
+      loadBalancer:
+        passHostHeader: true
+        serversTransport: coolify-apps-insecure
+        servers:
+          - url: "https://192.168.1.252:443"
+
+    # Forward HTTP:80 vers coolify-proxy. Coolify-proxy a un router http-0
+    # avec gzip middleware (pas de redirect-to-https sur les apps créées en http://).
+    coolify-apps-http:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://192.168.1.252:80"
+
+  serversTransports:
+    coolify-apps-insecure:
+      insecureSkipVerify: true
+    # `insecure` redéfini ici (file provider scope) pour que les services
+    # définis dans admin.yml (authentik, pve) qui référencent `serversTransport: insecure`
+    # puissent le résoudre. Traefik v3 résout les serversTransports en priorité
+    # par provider - un service file-provider cherche d'abord file-scoped, donc
+    # on duplique la définition de traefik.yaml ici.
+    insecure:
+      insecureSkipVerify: true

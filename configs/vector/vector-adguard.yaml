@@ -1,0 +1,70 @@
+# Vector client config - LXC 100 adguard
+# Ship journald + AdGuard querylog.json to Loki nsm-logs (LXC 121).
+#
+# Pré-requis : ACL u:vector:r sur /opt/AdGuardHome/data/querylog.json :
+#   setfacl -m u:vector:r /opt/AdGuardHome/data/querylog.json
+#   setfacl -m u:vector:rx /opt/AdGuardHome/data
+#
+# Push : pct push 100 ./vector-adguard.yaml /etc/vector/vector.yaml
+#        pct exec 100 -- systemctl restart vector
+data_dir: /var/lib/vector
+
+sources:
+  journald:
+    type: journald
+    current_boot_only: true
+
+  adguard_querylog:
+    type: file
+    include:
+      - /opt/AdGuardHome/data/querylog.json
+    # AdGuard log = ~120MB/jour, on tail depuis EOF (pas de backfill historique)
+    read_from: end
+    multiline:
+      start_pattern: '^\{'
+      mode: halt_before
+      condition_pattern: '^\{'
+      timeout_ms: 1000
+
+transforms:
+  add_meta:
+    type: remap
+    inputs:
+      - journald
+    source: |
+      .host = .host || "unknown"
+      .service = ._SYSTEMD_UNIT || "unknown"
+      .source_type = "journald"
+
+  parse_adguard:
+    type: remap
+    inputs:
+      - adguard_querylog
+    source: |
+      # Parse JSON line, extract champs utiles
+      parsed, err = parse_json(.message)
+      if err == null {
+        .timestamp = parsed.T
+        .query_host = parsed.QH
+        .query_type = parsed.QT
+        .client_ip = parsed.IP
+        .blocked = exists(parsed.Result.IsFiltered) && parsed.Result.IsFiltered == true
+        .reason = parsed.Result.Reason || 0
+      }
+      .host = "adguard"
+      .service = "adguard"
+      .source_type = "adguard_dns"
+
+sinks:
+  loki:
+    type: loki
+    inputs:
+      - add_meta
+      - parse_adguard
+    endpoint: http://192.168.1.242:3100
+    encoding:
+      codec: json
+    labels:
+      host: "{{ host }}"
+      service: "{{ service }}"
+      source_type: "{{ source_type }}"

@@ -1,0 +1,112 @@
+{
+  "uid": "homelab-overview",
+  "title": "Homelab - Logs Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-1h", "to": "now"},
+  "tags": ["homelab", "logs"],
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Log volume per host (events/min)",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "sum by (host) (count_over_time({source=\"journald\"}[1m]))",
+          "legendFormat": "{{host}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {"showLegend": true, "displayMode": "table", "placement": "right", "calcs": ["sum"]}
+      },
+      "fieldConfig": {
+        "defaults": {"unit": "short", "custom": {"drawStyle": "line", "lineInterpolation": "smooth", "fillOpacity": 10}}
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Hosts shipping",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 5, "w": 6, "x": 0, "y": 9},
+      "targets": [
+        {"expr": "count(count by (host) (count_over_time({source=\"journald\"}[5m])))", "refId": "A", "instant": true}
+      ],
+      "options": {"colorMode": "background", "graphMode": "none", "textMode": "auto"},
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 5}, {"color": "green", "value": 10}]}}}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "UCG events / min",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 5, "w": 6, "x": 6, "y": 9},
+      "targets": [
+        {"expr": "sum(rate({source_type=\"ucg-syslog\"}[1m]))", "refId": "A", "instant": true}
+      ],
+      "options": {"colorMode": "background", "graphMode": "area"},
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 1}}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Cowrie sessions (1h)",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 5, "w": 6, "x": 12, "y": 9},
+      "targets": [
+        {"expr": "sum(count_over_time({service=\"cowrie\"} |= \"cowrie.session.connect\"[1h]))", "refId": "A", "instant": true}
+      ],
+      "options": {"colorMode": "background"},
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}, {"color": "yellow", "value": 5}, {"color": "red", "value": 20}]}}}
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Loki ingest errors (5m)",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 5, "w": 6, "x": 18, "y": 9},
+      "targets": [
+        {"expr": "sum(count_over_time({host=\"nsm-logs\", service=\"loki.service\"} |~ \"(?i)error|reject\"[5m]))", "refId": "A", "instant": true}
+      ],
+      "options": {"colorMode": "background"},
+      "fieldConfig": {"defaults": {"thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}, {"color": "red", "value": 50}]}}}
+    },
+    {
+      "id": 6,
+      "type": "logs",
+      "title": "Live logs - errors/warnings across all hosts",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 14},
+      "targets": [
+        {"expr": "{source=\"journald\"} |~ \"(?i)error|warn|fail\"", "refId": "A"}
+      ],
+      "options": {"showTime": true, "showLabels": false, "showCommonLabels": false, "wrapLogMessage": true, "sortOrder": "Descending", "dedupStrategy": "none", "enableLogDetails": true}
+    },
+    {
+      "id": 7,
+      "type": "logs",
+      "title": "UCG firewall events (live)",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 12, "w": 12, "x": 0, "y": 26},
+      "targets": [
+        {"expr": "{source_type=\"ucg-syslog\"}", "refId": "A"}
+      ],
+      "options": {"showTime": true, "wrapLogMessage": true, "sortOrder": "Descending"}
+    },
+    {
+      "id": 8,
+      "type": "logs",
+      "title": "Cowrie honeypot events (live)",
+      "datasource": {"type": "loki", "uid": "loki"},
+      "gridPos": {"h": 12, "w": 12, "x": 12, "y": 26},
+      "targets": [
+        {"expr": "{service=\"cowrie\"}", "refId": "A"}
+      ],
+      "options": {"showTime": true, "wrapLogMessage": true, "sortOrder": "Descending"}
+    }
+  ]
+}
