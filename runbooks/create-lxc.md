@@ -64,7 +64,7 @@ pct exec <VMID> -- ip a | grep "inet " | grep -v 127.0.0.1
 
 ```bash
 pct stop <VMID>
-pct set <VMID> -net0 name=eth0,bridge=vmbr0,ip=192.168.68.<X>/24,gw=192.168.1.1,hwaddr=<MAC>,type=veth
+pct set <VMID> -net0 name=eth0,bridge=vmbr0,ip=192.168.1.<X>/24,gw=192.168.1.1,hwaddr=<MAC>,type=veth
 pct start <VMID>
 ```
 

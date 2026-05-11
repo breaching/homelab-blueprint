@@ -14,7 +14,7 @@
 flowchart TB
     subgraph Lab ["🏠 Homelab Proxmox (LAN)"]
         Traefik["🔀 Traefik LXC 103<br/>192.168.1.165<br/>*.home.example.com"]
-        Coolify["🚀 Coolify VM 300<br/>192.168.68.X<br/>(à provisionner)"]
+        Coolify["🚀 Coolify VM 300<br/>192.168.1.X<br/>(à provisionner)"]
         Mealie["🍳 Mealie (recettes perso)<br/>déployé sur Coolify local"]
     end
 
